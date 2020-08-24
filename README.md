@@ -1,8 +1,8 @@
-# term_deposit_predictive_model
+# Term Deposit Predictive Model
 
 ## About 
 
-A supervised machine learnning predictive model to classify customers who are likely purchase a bank's term sheet.
+A supervised machine learnning predictive model to classify customers who are most likely to purchase a bank's term sheet. 
 
 ## Business Need
 
@@ -23,7 +23,8 @@ did not subscribe to a term deposit. As their newly employed machine learning
 researcher, they want me to come up with a robust predictive model that would help
 them identify customers who would or would not subscribe to their term deposit in the
 future.
-My main goal as a machine learning researcher is to carry out data exploration, data
+
+> My main goal as a machine learning researcher is to carry out data exploration, data
 cleaning, feature extraction, and developing robust machine learning algorithms that
 would aid them in the department. 
 

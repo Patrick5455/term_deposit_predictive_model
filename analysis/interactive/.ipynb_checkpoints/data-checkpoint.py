@@ -37,13 +37,13 @@ def outlier_treatment(data, col_list, type='median_replacement'):
     """
     This treat outliers using any ofthses 3 methods as specified by user
     
-        1. median replacement
+        1. median_replace -  median replacement
         
-        2. quantile flooring
+        2. quant_floor - quantile flooring
         
-        3. trimming 
+        3. trim - trimming 
         
-        4. log transformations
+        4. log_transform - log transformations
     
     The methods are some of the commont statistical methods in treating outler
     columns
@@ -61,32 +61,17 @@ def outlier_treatment(data, col_list, type='median_replacement'):
             iqr = q3 - q1
             high = q3 + 1.5 * iqr
             low = q1 - 1.5 * iqr
-           # print(q3 + 1.5 * iqr)
-            data[col]=np.where(data[col] > high, median, data[col])
-            data[col]=np.where(data[col] < low, median, data[col])
-            
-            
-    if type == "mean_replace":
-        
-        for col in col_list:
-            mean = data[col].mean()
-            q1 = data[col].quantile(0.25)
-            q3 = data[col].quantile(0.75)
-            iqr = q3 - q1
-            high = q3 + 1.5 * iqr
-            low = q1 - 1.5 * iqr
-           # print(q3 + 1.5 * iqr)
-            data[col]=np.where(data[col] > high, mean, data[col])
-            data[col]=np.where(data[col] < low, mean, data[col])
-        
+            #print(q3 + 1.5 * iqr)
+            data = np.where(data[col] > high, median, data[col])
+            data = np.where(data[col] < low, median, data[col])        
     
     if type == "quant_floor":
         
         for col in col_list:
             q_10 = data[col].quantile(0.10)
             q_90 = data[col].quantile(0.90)
-            data[col] =  data[col] = np.where(data[col] < q_10, q_10 , data[col])
-            data[col] =  data[col] = np.where(data[col] > q_90, q_90 , data[col])
+            data =  data[col] = np.where(data[col] < q_10, q_10 , data[col])
+            data =  data[col] = np.where(data[col] > q_90, q_90 , data[col])
             
     if type == "trim":
         
@@ -97,14 +82,13 @@ def outlier_treatment(data, col_list, type='median_replacement'):
             high = (q3 + 1.5) * iqr 
             low = (q1 - 1.5) * iqr
             index = data[(data[col] >= high)|(data[col] <= low)].index
-          #  print(col,'\n', index)
-            data[col] = data[col].drop(index)
+            print(col,'\n', index)
+            data.drop(index, inplace=True)
             
     if type == "log_transform":
-        for col in col_list:
-            data[col] = data[col].map(lambda i: np.log(i) if i > 0 else 0)
-        
-
+        for col in outlier_cols:
+            data = data[col].map(lambda i: np.log(i) if i > 0 else 0)
+      
     return data
         
         

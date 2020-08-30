@@ -1,11 +1,13 @@
+
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
 import numpy as  np
 import pandas as pd
 from pandas.api.types import is_numeric_dtype
-
+from sklearn.ensemble import IsolationForest
 import os
+from sklearn.preprocessing import RobustScaler, StandardScaler
 
 def check_outliers(data, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
     
@@ -22,6 +24,8 @@ def check_outliers(data, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
     IQR = Q3 - Q1
     num_data = data.select_dtypes(include='number')
     result = dict ((((num_data < (Q1 - 1.5 * IQR)) | (num_data > (Q3 + 1.5 * IQR)))==True).any())
+    #data[(data[col] >= high)|(data[col] <= low)].index
+    index = data[(num_data < Q1 - 1.5 * IQR) | (num_data > Q3 + 1.5 * IQR)].index
     for k,v in result.items():
         if v == True:  
             outliers.append(k)
@@ -31,7 +35,7 @@ def check_outliers(data, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
         plt.savefig(fname=save_img, format='png')
         return pair_plot
     else:
-        return data[outliers]
+        return data.loc[index, outliers]
     
     
 
@@ -95,5 +99,23 @@ def treat_outliers(data, type='median_replace'):
         for col in data.columns.tolist():
             if is_numeric_dtype(data[col]):
                 data[col] = data[col].map(lambda i: np.log(i) if i > 0 else 0)
-      
-    return data
+                
+    if type == "isf":
+        iso = IsolationForest(contamination=0.1)
+        yhat = iso.fit_predict(data.select_dtypes(exclude='object'))
+        #select all rows that are not outliers
+        mask = yhat != -1 
+        data = data[mask]
+        
+
+    return data 
+
+
+def scale_data(data,scaler=RobustScaler()):
+    
+    """
+    Specify scaler type, scaler type must have fit_transform as a method
+    
+    """
+    data_scaled = scaler.fit_transform(data)
+    return data_scaled

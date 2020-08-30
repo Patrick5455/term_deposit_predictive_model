@@ -9,6 +9,12 @@ from sklearn.ensemble import IsolationForest
 import os
 from sklearn.preprocessing import RobustScaler, StandardScaler
 
+def load_data(path="", sep=",", cols_to_drop=[]):
+    data = pd.read_csv(path, sep)
+    for col in cols_to_drop:
+        data.drop(col, axis=1, inplace=True)
+    return data
+
 def check_outliers(data, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
     
     """

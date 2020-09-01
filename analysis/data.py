@@ -1,5 +1,3 @@
-# %%writefile ../scripts/data.py
-
 
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -108,7 +106,7 @@ def treat_outliers(data, type='median_replace'):
             if is_numeric_dtype(data[col]):
                 data[col] = data[col].map(lambda i: np.log(i) if i > 0 else 0)
                 
-    if type == "isf": 
+    if type == "isf":
         iso = IsolationForest(contamination=0.1)
         yhat = iso.fit_predict(data.select_dtypes(exclude='object'))
         #select all rows that are not outliers

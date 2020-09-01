@@ -10,6 +10,8 @@ from sklearn.ensemble import IsolationForest
 import os
 from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
+
 
 
 class PrepareData():
@@ -107,7 +109,7 @@ class PrepareData():
                     self.data[col] =  self.data[col] = np.where(self.data[col] < q_10, q_10 , self.data[col])
                     self.data[col] =  self.data[col] = np.where(self.data[col] > q_90, q_90 , self.data[col])
 
-        if type == "trim":
+        if type == "trim": 
 
             for col in self.data.columns.tolist():
                 low = .05

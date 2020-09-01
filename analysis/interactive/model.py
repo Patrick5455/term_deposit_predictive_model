@@ -41,6 +41,7 @@ def encode (data):
         print(ohe.categories_) 
     return data 
 
+ 
 
 def x_y_split(data, x=None, y=None, type_="single", test_size=.10):
     
@@ -63,8 +64,9 @@ def x_y_split(data, x=None, y=None, type_="single", test_size=.10):
     
     
     
-def model_pipeline(X_train=None, y_train=None, X_test=None, pca=PCA(), cv=StratifiedKFold(), imb_sample=SMOTE(random_state=123),
-                  estimator=LogisticRegressionCV()):
+def model_pipeline(X_train=None, y_train=None, X_test=None, pca=PCA(), 
+                   cv=StratifiedKFold(), imb_sample=SMOTE(random_state=123),
+                  model=LogisticRegressionCV(), use_pca = True, use_smote=True):
     
     """
     Trains a model for an imbalanced class using the specified estimator
@@ -72,23 +74,39 @@ def model_pipeline(X_train=None, y_train=None, X_test=None, pca=PCA(), cv=Strati
     applying the specified sampling strategy
     """
     
-    model = ImbPipe([('imb_sample', imb_sample), ('pca', pca), ('estimator', estimator)])
-    model.fit(X_train, y_train) 
-    y_hat = model.predict(X_test) 
-    return model, y_hat
+    if use_pca and use_smote:
+        model = ImbPipe([('imb_sample', imb_sample), ('pca', pca), ('model', model)])
+        model.fit(X_train, y_train) 
+        y_hat = model.predict(X_test) 
+        return model, y_hat
+    
+    if use_pca and use_smote == False:
+        
+        model = ImbPipe([('pca', pca), ('model', model)])
+        model.fit(X_train, y_train) 
+        y_hat = model.predict(X_test) 
+        return model, y_hat
+    
+    if use_smote and use_pca == False:
+        
+        model = ImbPipe([('imb_sample', imb_sample), ('model', model)])
+        model.fit(X_train, y_train) 
+        y_hat = model.predict(X_test) 
+        return model, y_hat
+        
     
     
-def gridSearch(model, hyper_params={},cv=StratifiedKFold(), x_train=None, y_train=None):
+def gridSearch(model,hyper_params={},cv=StratifiedKFold(), x_train=None, y_train=None):
     
-    """ 
+    """
     Performs GridSeach of the best hyperparmaters for the passed model
     """
     
-    search = GridSearchCV(estimator=model, param_grid = hyper_params, n_jobs=-1, cv=cv)
+    search = GridSearchCV(estimator=model, param_grid = hyper_params, n_jobs=-1, cv=cv, scoring='f1')
     search.fit(X=x_train, y=y_train)
     print("Best parameter (CV score=%0.3f):\n" % search.best_score_)
     print(search.best_params_)
-    print(search.score)  
+    print(search.score) 
     return search
 
 
@@ -99,21 +117,21 @@ def plot_grid_search(search_obj, pca_obj, X_train):
     and plots the optimised pca components
     """
     
-    print("Best parameter (CV score=%0.3f):\n" % search_obj.best_score_)
-    print("Best Params:",search_obj.best_params_)
-    pca_obj.fit(X_train)
+    print("Best parameter (CV score=%0.3f):\n" % search.best_score_)
+    print("Best Params:",search.best_params_)
+    pca.fit(X_train_scaled)
 
     fig, (ax0, ax1) = plt.subplots(nrows=2, sharex=True, figsize=(8, 8))
-    ax0.plot(np.arange(1, pca_obj.n_components_ + 1),
-             pca_obj.explained_variance_ratio_, '+', linewidth=2)
+    ax0.plot(np.arange(1, pca.n_components_ + 1),
+             pca.explained_variance_ratio_, '+', linewidth=2)
     ax0.set_ylabel('PCA explained variance ratio')
 
-    ax0.axvline(search_obj.best_estimator_.named_steps['pca'].n_components,
+    ax0.axvline(search.best_estimator_.named_steps['pca'].n_components,
                 linestyle=':', label='n_components chosen')
     ax0.legend(prop=dict(size=12))
 
     # For each number of components, find the best classifier results
-    results = pd.DataFrame(search_obj.cv_results_)
+    results = pd.DataFrame(search.cv_results_)
     components_col = 'param_pca__n_components'
     best_clfs = results.groupby(components_col).apply(
         lambda g: g.nlargest(1, 'mean_test_score'))

@@ -1,40 +1,71 @@
 # %%writefile ../scripts/data.py
 
 import seaborn as sns
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 import os
 import numpy as  np
 import pandas as pd
+import pandas
 from pandas.api.types import is_numeric_dtype
 from sklearn.ensemble import IsolationForest
 import os
 from sklearn.preprocessing import RobustScaler, StandardScaler
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
+def load_data(path="", sep=",", cols_to_drop=[]):
+            
+        try :
+            data = pd.read_csv(path, sep)
+            
+            if len(cols_to_drop) > 0:
+                for col in cols_to_drop:
+                    data.drop(col, axis=1, inplace=True)
 
-class PrepareData():
+            return data 
+        
+        except:
+            
+            "No data path was passed upon inastantiation of object"
+    
+
+
+# define class Preprocess to preprocess data
+# class Preprocess inherits from BaseEstimator & TransformerMixin
+# the idea behind the Preprocess class is to preprocess our data ready for modelling
+
+class Preprocessor(BaseEstimator, TransformerMixin):
     
     def __repr__(self):
         
         return "Used to prepare data for modelling"
     
-    def  __init__(self, path=""):
-        self.path = path
-    
-    def load_data(self, path="", sep=",", cols_to_drop=[]):
-        self.data = pd.read_csv(self.path, sep)
-        for col in cols_to_drop:
-            self.data.drop(col, axis=1, inplace=True)
-
-        return self.data 
-
-
-    def check_outliers(self, data, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
+    def  __init__(self):
         
-        self.data = data
+        pass
+        
+#         self.path = path
+#         self.cols_to_drop = cols_to_drop 
+#         self.sep = sep 
+        
+        
     
+    def fit(self, data, y=None):
+        
+        assert(type(data) is pandas.core.frame.DataFrame), "data must be of type pandas.DataFrame"
+        
+        self.data = data 
+        
+        print("Fitted")
+        
+        return self 
+        
+
+
+    def check_outliers(self, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
+            
         """
         This functions checks for columns with outlers using the IQR method
 
@@ -42,7 +73,7 @@ class PrepareData():
         show_plot can be set to True to output pairplots of outlier columns    
         """
 
-        outliers = [] 
+        self.outliers = [] 
         Q1 = self.data.quantile(0.25)  
         Q3 = self.data.quantile(0.75)
         IQR = Q3 - Q1
@@ -52,20 +83,18 @@ class PrepareData():
         index = self.data[(num_data < Q1 - 1.5 * IQR) | (num_data > Q3 + 1.5 * IQR)].index
         for k,v in result.items():
             if v == True:  
-                outliers.append(k)
+                self.outliers.append(k)
         if show_plot:
-            pair_plot = sns.pairplot(self.data[outliers]);
+            self.outlier_pair_plot = sns.pairplot(self.data[self.outliers]);
             print(f'{result},\n\n Visualization of outlier columns')
             plt.savefig(fname=save_img, format='png')
-            return pair_plot
+            return  self.outlier_pair_plot
         else:
             return self.data.loc[index, outliers] 
         
         
-    def treat_outliers(self, data, type='median_replace'):
-        
-        self.data = data
-    
+    def treat_outliers(self, type_='median_replace'):
+            
         """
         This treat outliers using any ofthses 3 methods as specified by user
 
@@ -84,23 +113,20 @@ class PrepareData():
 
         """
 
-        if type == "median_replace":
+        if type_ == "median_replace":
 
             for col in self.data.columns.tolist():
                 if is_numeric_dtype(self.data[col]):
                     median = (self.data[col].quantile(0.50))
-                    print(median)
                     q1 = self.data[col].quantile(0.25)
                     q3 = self.data[col].quantile(0.75)
                     iqr = q3 - q1
                     high = int(q3 + 1.5 * iqr) 
                     low = int(q1 - 1.5 * iqr)
-                    print(high, low, iqr)
-                    print(col)
                     self.data[col] = np.where(self.data[col] > high, median, self.data[col])
                     self.data[col] = np.where(self.data[col] > high, median, self.data[col])        
 
-        if type == "quant_floor":
+        if type_ == "quant_floor":
 
             for col in self.data.columns.tolist():
                 if is_numeric_dtype(data[col]):
@@ -109,7 +135,7 @@ class PrepareData():
                     self.data[col] =  self.data[col] = np.where(self.data[col] < q_10, q_10 , self.data[col])
                     self.data[col] =  self.data[col] = np.where(self.data[col] > q_90, q_90 , self.data[col])
 
-        if type == "trim": 
+        if type_ == "trim": 
 
             for col in self.data.columns.tolist():
                 low = .05
@@ -120,12 +146,12 @@ class PrepareData():
                         self.data = self.data[(self.data[name] >= quant_df.loc[low, name]) 
                             & (self.data[name] <= quant_df.loc[high, name])]
 
-        if type == "log_transform":  
+        if type_ == "log_transform":  
             for col in self.data.columns.tolist():
                 if is_numeric_dtype(self.data[col]):
                     self.data[col] = self.data[col].map(lambda i: np.log(i) if i > 0 else 0)
 
-        if type == "isf":
+        if type_ == "isf":
             iso = IsolationForest(contamination=0.1)
             yhat = iso.fit_predict(self.data.select_dtypes(exclude='object'))
             #select all rows that are not outliers
@@ -136,19 +162,15 @@ class PrepareData():
         return self.data 
     
     
-    def map_col_values(self, data, col_name="", values_dict={}):
-
-        self.data = data
+    def map_col_values(self, col_name="", values_dict={}):
 
         self.data[col_name] = self.data[col_name].map(values_dict)
 
         return self.data
     
     
-    def split_data_single(self, data, target_cols=[]):
-        
-        self.data = data
-    
+    def split_data_single(self, target_cols=[]):
+            
         self.features = self.data.drop(columns=target_cols, axis=1) 
 
         self.target   = pd.DataFrame(self.data[target_cols])
@@ -156,22 +178,41 @@ class PrepareData():
         return self.features, self.target
     
     
-    def encode (self, data):
+    def encode (self, data_obj=None): 
         
-        self.data = data
+        if data_obj is None:
+            print("Not None")
         
-        ohe = OneHotEncoder(sparse=False, handle_unknown='ignore', )
-        to_encode = self.data.select_dtypes(exclude='number')
-        if self.data.shape[1] > 1:
-            #ohe = MultiLabelBinarizer()
-            self.data.drop(to_encode.columns.tolist(), axis=1, inplace = True)
-            features_cat_encode = pd.DataFrame(ohe.fit_transform(to_encode))
-            self.data = self.data.merge(features_cat_encode, left_index=True, right_index=True)
-            #print(ohe.classes_) 
+            ohe = OneHotEncoder(sparse=False, handle_unknown='ignore', )
+            to_encode = self.data.select_dtypes(exclude='number')
+            if self.data.shape[1] > 1:
+                #ohe = MultiLabelBinarizer()
+                self.data.drop(to_encode.columns.tolist(), axis=1, inplace = True)
+                features_cat_encode = pd.DataFrame(ohe.fit_transform(to_encode))
+                self.data = self.data.merge(features_cat_encode, left_index=True, right_index=True)
+               # print(ohe.classes_) 
+            else: 
+                self.data = pd.DataFrame(ohe.fit_transform(to_encode))
+                print(ohe.categories_) 
+            return self.data
+        
         else:
-            self.data = pd.DataFrame(ohe.fit_transform(to_encode))
-            print(ohe.categories_) 
-        return self.data
+            
+            self.data_obj = data_obj
+            
+            ohe = OneHotEncoder(sparse=False, handle_unknown='ignore', )
+            to_encode = self.data_obj.select_dtypes(exclude='number')
+            if self.data_obj.shape[1] > 1:
+                #ohe = MultiLabelBinarizer()
+                self.data_obj.drop(to_encode.columns.tolist(), axis=1, inplace = True)
+                features_cat_encode = pd.DataFrame(ohe.fit_transform(to_encode))
+                self.data_obj = self.data_obj.merge(features_cat_encode, left_index=True, right_index=True)
+               # print(ohe.classes_) 
+            else:
+                self.data_obj = pd.DataFrame(ohe.fit_transform(to_encode))
+                print(ohe.categories_) 
+            return self.data_obj
+            
     
     def split_data_double(self, features, target, test_size=.10):
         
@@ -189,10 +230,8 @@ class PrepareData():
         return self.X_train, self.X_test, self.y_train, self.y_test
 
 
-    def scale_data(self, data,scaler=RobustScaler()):
-        
-        self.data = data
-
+    def scale_data(self, scaler=RobustScaler()):
+    
         """
         Specify scaler type, scaler type must have fit_transform as a method
 
@@ -200,3 +239,34 @@ class PrepareData():
         self.data_scaled = scaler.fit_transform(self.data)
         
         return self.data_scaled
+    
+    
+    def transform(self, X):
+        
+        self.data = X
+                
+        self.data = self.treat_outliers(type_="isf") 
+        
+        self.data = self.map_col_values(col_name="y", values_dict={"no":0, "yes":1})
+        
+        self.features, self.target = self.split_data_single(target_cols=["y"])
+        #print(self.features)
+                
+        self.features = self.encode(self.features)
+        self.target = self.target.iloc[0:self.features.shape[0], 0:]
+        #print(self.target)
+        self.X_train, self.X_test, self.y_train, self.y_test = self.split_data_double(
+            self.features, self.target, test_size=.10)
+        
+        scaler=RobustScaler() 
+            
+        X = scaler.fit_transform(self.X_train)
+        
+        return X
+    
+    
+    def fit_transform(self, X, y=None):
+        
+        self.X = X
+        
+        return self.transform(self.X) 

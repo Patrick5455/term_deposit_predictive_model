@@ -10,6 +10,7 @@ from imblearn.over_sampling import SMOTE, _random_over_sampler
 from sklearn.preprocessing import OneHotEncoder
 from imblearn.pipeline import Pipeline as ImbPipe
 from sklearn.model_selection import KFold, StratifiedKFold, GridSearchCV
+import os
 
 
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score, precision_score, recall_score

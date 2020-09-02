@@ -1,3 +1,4 @@
+#%%writefile ../scripts/project_package/plot_package/bi_plot.py
 
 import seaborn as sns
 import matplotlib.pyplot as plt

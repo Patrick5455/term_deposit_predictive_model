@@ -1,4 +1,3 @@
-# %%writefile ../scripts/data.py
 #%%writefile ../scripts/project_package/data_package/data.py
 
 import seaborn as sns
@@ -9,11 +8,10 @@ import pandas as pd
 import pandas
 from pandas.api.types import is_numeric_dtype
 from sklearn.ensemble import IsolationForest
-import os
-from sklearn.preprocessing import RobustScaler, StandardScaler
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import *
+from sklearn.model_selection import *
+from sklearn.preprocessing import *
+from sklearn.base import *
 
 
 class WrangleData():

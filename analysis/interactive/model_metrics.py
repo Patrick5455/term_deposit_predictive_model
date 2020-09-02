@@ -2,6 +2,11 @@
 
 from imblearn.metrics import *
 from sklearn.metrics import *
+from sklearn.preprocessing import *
+from sklearn.decomposition import *
+from sklearn.base import *
+from sklearn.ensemble import RandomForestClassifier
+
 import pandas as pd
 
 class metrics ():
@@ -92,3 +97,6 @@ class metrics ():
         )
         df_scores = pd.concat([df_scores, clf_score], axis=1).round(decimals=3)
         return df_scores
+    
+    def plot_roc():
+        pass

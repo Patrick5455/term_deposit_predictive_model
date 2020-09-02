@@ -1,3 +1,4 @@
+# %%writefile ../scripts/data.py
 #%%writefile ../scripts/project_package/data.py
 
 import seaborn as sns

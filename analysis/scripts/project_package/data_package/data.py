@@ -1,5 +1,3 @@
-# %%writefile ../scripts/data.py
-#%%writefile ../scripts/project_package/data_package/data.py
 
 import seaborn as sns
 import matplotlib.pyplot as plt 

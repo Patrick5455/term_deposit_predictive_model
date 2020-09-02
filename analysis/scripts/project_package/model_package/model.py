@@ -1,4 +1,3 @@
-#%%writefile ../scripts/project_package/model_package/model.py
 
 
 import pandas as pd

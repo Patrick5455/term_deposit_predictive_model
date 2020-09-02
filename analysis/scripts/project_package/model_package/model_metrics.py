@@ -1,4 +1,3 @@
-#%%writefile ../scripts/project_package/model_package/model_metrics.py
 
 from imblearn.metrics import *
 from sklearn.metrics import *

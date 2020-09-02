@@ -1,4 +1,6 @@
-# %%writefile ../scripts/data.py
+#%%writefile ../scripts/main.py
+#%%writefile ../scripts/project_package/main.py
+
 
 import pandas as pd
 import numpy as np

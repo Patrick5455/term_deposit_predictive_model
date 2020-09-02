@@ -1,4 +1,4 @@
-# %%writefile ../scripts/data.py
+#%%writefile ../scripts/project_package/data.py
 
 import seaborn as sns
 import matplotlib.pyplot as plt 
@@ -15,57 +15,57 @@ from sklearn.preprocessing import OneHotEncoder, MultiLabelBinarizer
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-def load_data(path="", sep=",", cols_to_drop=[]):
-            
-        try :
-            data = pd.read_csv(path, sep)
-            
-            if len(cols_to_drop) > 0:
-                for col in cols_to_drop:
-                    data.drop(col, axis=1, inplace=True)
-
-            return data 
-        
-        except:
-            
-            "No data path was passed upon inastantiation of object"
-    
-
-
-# define class Preprocess to preprocess data
-# class Preprocess inherits from BaseEstimator & TransformerMixin
-# the idea behind the Preprocess class is to preprocess our data ready for modelling
-
-class Preprocessor(BaseEstimator, TransformerMixin):
+class WrangleData():
     
     def __repr__(self):
         
-        return "Used to prepare data for modelling"
+        return "Used to prepare data for wrangling"
     
     def  __init__(self):
         
         pass
         
-#         self.path = path
-#         self.cols_to_drop = cols_to_drop 
-#         self.sep = sep 
-        
-        
     
-    def fit(self, data, y=None):
+    
+    def load_data(self, path="", sep=",", cols_to_drop=[]):
         
-        assert(type(data) is pandas.core.frame.DataFrame), "data must be of type pandas.DataFrame"
+        import pandas as pd
         
-        self.data = data 
+        self.path = path
+        self.cols_to_drop = cols_to_drop 
+        self.sep = sep 
+            
+        try :
+            self.data = pd.read_csv(path, sep)
+            
+            if len(self.cols_to_drop) > 0:
+                for col in self.cols_to_drop:
+                    self.data.drop(col, axis=1, inplace=True)
+                    
+            self.fit()
+            print("You are now fit to use this object for wrangling")
+            
+            return self.data 
         
-        print("Fitted")
+        except:
+            
+            "No data path was passed upon call of method load_data"
+    
+    def _fit(self):
         
-        return self 
+        try:
+            assert(type(self.data) is pandas.core.frame.DataFrame), "data must be of type pandas.DataFrame"
+            
+            print("You are now fit to use this object for wrangling")
+        
+        except AttributeError:
+            
+            print("Hey Buddy you need to load a data first !!! ")
         
 
 
     def check_outliers(self, show_plot=False, save_img=os.getcwd()+'/outliers.png'):
-            
+ 
         """
         This functions checks for columns with outlers using the IQR method
 
@@ -90,7 +90,10 @@ class Preprocessor(BaseEstimator, TransformerMixin):
             plt.savefig(fname=save_img, format='png')
             return  self.outlier_pair_plot
         else:
-            return self.data.loc[index, outliers] 
+            return self.data.loc[index, self.outliers] 
+        
+                
+                
         
         
     def treat_outliers(self, type_='median_replace'):
@@ -105,6 +108,8 @@ class Preprocessor(BaseEstimator, TransformerMixin):
             3. trim - trimming 
 
             4. log_transform - log transformations
+            
+            5. isf    -       IsolationForest (also like trimming)
 
         The methods are some of the commont statistical methods in treating outler
         columns
@@ -163,6 +168,10 @@ class Preprocessor(BaseEstimator, TransformerMixin):
     
     
     def map_col_values(self, col_name="", values_dict={}):
+        
+        """
+        replace values in a series (values_dict.keys) with specified values from (values_dict.values)
+        """
 
         self.data[col_name] = self.data[col_name].map(values_dict)
 
@@ -171,18 +180,17 @@ class Preprocessor(BaseEstimator, TransformerMixin):
     
     def split_data_single(self, target_cols=[]):
             
-        self.features = self.data.drop(columns=target_cols, axis=1) 
+        self.split1 = self.data.drop(columns=target_cols, axis=1) 
 
-        self.target   = pd.DataFrame(self.data[target_cols])
+        self.split2   = pd.DataFrame(self.data[target_cols])
 
-        return self.features, self.target
+        return self.split1, self.split2
     
     
-    def encode (self, data_obj=None): 
+    def encode (self, use_split1=False, use_split2 = False, use_data=True): 
         
-        if data_obj is None:
-            print("Not None")
-        
+        if use_data:
+      
             ohe = OneHotEncoder(sparse=False, handle_unknown='ignore', )
             to_encode = self.data.select_dtypes(exclude='number')
             if self.data.shape[1] > 1:
@@ -194,79 +202,60 @@ class Preprocessor(BaseEstimator, TransformerMixin):
             else: 
                 self.data = pd.DataFrame(ohe.fit_transform(to_encode))
                 print(ohe.categories_) 
+
             return self.data
         
-        else:
-            
-            self.data_obj = data_obj
-            
+        
+        if use_split1:
+      
             ohe = OneHotEncoder(sparse=False, handle_unknown='ignore', )
-            to_encode = self.data_obj.select_dtypes(exclude='number')
-            if self.data_obj.shape[1] > 1:
+            to_encode = self.split1.select_dtypes(exclude='number')
+            if self.split1.shape[1] > 1:
                 #ohe = MultiLabelBinarizer()
-                self.data_obj.drop(to_encode.columns.tolist(), axis=1, inplace = True)
+                self.split1.drop(to_encode.columns.tolist(), axis=1, inplace = True)
                 features_cat_encode = pd.DataFrame(ohe.fit_transform(to_encode))
-                self.data_obj = self.data_obj.merge(features_cat_encode, left_index=True, right_index=True)
+                self.split1 = self.split1.merge(features_cat_encode, left_index=True, right_index=True)
                # print(ohe.classes_) 
-            else:
-                self.data_obj = pd.DataFrame(ohe.fit_transform(to_encode))
+            else: 
+                self.split1 = pd.DataFrame(ohe.fit_transform(to_encode))
                 print(ohe.categories_) 
-            return self.data_obj
+
+            return self.split1
+        
+        
+        if use_split2:
+      
+            ohe = OneHotEncoder(sparse=False, handle_unknown='ignore', )
+            to_encode = self.split2.select_dtypes(exclude='number')
+            if self.split2.shape[1] > 1:
+                #ohe = MultiLabelBinarizer()
+                self.split2.drop(to_encode.columns.tolist(), axis=1, inplace = True)
+                features_cat_encode = pd.DataFrame(ohe.fit_transform(to_encode))
+                self.split2 = self.split2.merge(features_cat_encode, left_index=True, right_index=True)
+               # print(ohe.classes_) 
+            else: 
+                self.split2 = pd.DataFrame(ohe.fit_transform(to_encode))
+                print(ohe.categories_) 
+
+            return self.split2
             
-    
-    def split_data_double(self, features, target, test_size=.10):
-        
-        if features.shape[0] != target.shape[0]:
-            raise Exception("Wrong, you are trying to pass unequal shapes\n\
-            Shapes of dataframes must be equal\n\
-            Try target = target.iloc[0:features.shape[0]]")
-        
-        self.features = features
-        self.target = target
-        
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(self.features, self.target,
-                                               test_size= test_size, random_state=24)
-        
-        return self.X_train, self.X_test, self.y_train, self.y_test
 
-
-    def scale_data(self, scaler=RobustScaler()):
-    
+    def scale_data(self, scaler=RobustScaler(),
+                  use_data=True, use_split1= False, use_split2 = False):
+        
         """
-        Specify scaler type, scaler type must have fit_transform as a method
-
+            Specify scaler type, scaler type must have fit_transform as a method
         """
-        self.data_scaled = scaler.fit_transform(self.data)
         
-        return self.data_scaled
-    
-    
-    def transform(self, X):
+        if use_data:
+            self.data = scaler.fit_transform(self.data)
+            return self.data 
         
-        self.data = X
-                
-        self.data = self.treat_outliers(type_="isf") 
+        if use_split1:
+            self.split1 = scaler.fit_transform(self.split1)
+            return self.split1
         
-        self.data = self.map_col_values(col_name="y", values_dict={"no":0, "yes":1})
-        
-        self.features, self.target = self.split_data_single(target_cols=["y"])
-        #print(self.features)
-                
-        self.features = self.encode(self.features)
-        self.target = self.target.iloc[0:self.features.shape[0], 0:]
-        #print(self.target)
-        self.X_train, self.X_test, self.y_train, self.y_test = self.split_data_double(
-            self.features, self.target, test_size=.10)
-        
-        scaler=RobustScaler() 
+        if use_split2:
+            self.split2 = scaler.fit_transform(self.split2)
+            return self.split2
             
-        X = scaler.fit_transform(self.X_train)
-        
-        return X
-    
-    
-    def fit_transform(self, X, y=None):
-        
-        self.X = X
-        
-        return self.transform(self.X) 
